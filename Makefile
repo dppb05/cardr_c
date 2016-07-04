@@ -1,23 +1,35 @@
-CC=gcc
-CFLAGS=-Wall -c
-EXEDIR=.
+TARGET = cardr
 
-all: $(EXEDIR)/cardr
+CC = gcc
+CFLAGS = -Wall -O3
 
-$(EXEDIR)/cardr: stex.o matrix.o util.o cardr.o
-	$(CC) stex.o matrix.o util.o cardr.o -o $@ -lm
+LINKER = gcc -o
+LFLAGS = -Wall -O3
+POSTLFLAGS = -lm
 
-cardr.o: cardr.c
-	$(CC) $(CFLAGS) cardr.c
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
 
-util.o: util.c
-	$(CC) $(CFLAGS) util.c
+SOURCES	:= $(wildcard $(SRCDIR)/*.c)
+INCLUDES := $(wildcard $(SRCDIR)/*.h)
+OBJECTS := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+rm = rm -f
 
-matrix.o: matrix.c
-	$(CC) $(CFLAGS) matrix.c
+$(BINDIR)/$(TARGET): $(OBJECTS)
+	@$(LINKER) $@ $(LFLAGS) $(OBJECTS) $(POSTLFLAGS)
+	@echo "Linking complete"
 
-stex.o: stex.c
-	$(CC) $(CFLAGS) stex.c
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@$(CC) $(CFLAGS) -c $< -o $@ 
+	@echo "Compiled "$<" successfully"
 
+.PHONEY: clean
 clean:
-	rm -rf *o $(EXEDIR)/cardr
+	@$(rm) $(OBJECTS)
+	@echo "Cleanup complete"
+
+.PHONEY: remove 
+remove: clean
+	@$(rm) $(BINDIR)/$(TARGET)
+	@echo "Executable removed"
