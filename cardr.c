@@ -34,7 +34,6 @@ void init_memb() {
     size_t k;
     double sum;
     double val;
-//    double val = 1.0 / clustc;
     for(i = 0; i < objc; ++i) {
         sum = 0.0;
         for(k = 0; k < clustc; ++k) {
@@ -157,8 +156,6 @@ void global_dissim() {
             }
         }
     }
-//    printf("global_dmatrix:\n");
-//    print_st_matrix(&global_dmatrix, 7, true);
 }
 
 void compute_membvec() {
@@ -173,14 +170,9 @@ void compute_membvec() {
             set(&membvec[k], i, 0, val);
             sum_den += val; 
         }
-//        val = 0.0;
         for(i = 0; i < objc; ++i) {
             set(&membvec[k], i, 0, get(&membvec[k], i, 0) / sum_den);
-//            val += get(&membvec[k], i, 0);
         }
-//        printf("membvec[%d]:\n", k);
-//        print_st_matrix(&membvec[k], 7, true);
-//        printf("sum: %lf\n", val);
     }
 }
 
@@ -218,7 +210,6 @@ bool compute_dists() {
 }
 
 double compute_deltabeta() {
-//    printf("Computing deltabeta...\n");
     size_t i;
     size_t k;
     double val;
@@ -232,22 +223,13 @@ double compute_deltabeta() {
         idcol[i] = 1.0;
         for(k = 0; k < clustc; ++k) {
             val = pow(euclid_dist(membvec[k].mtx, idcol, objc), 2.0);
-//            val = minkowski(membvec[k].mtx, idcol, objc, 2.0);
             if(val != 0.0) {
                 val = (-2.0 * get(&dists, k, i)) / val;
                 if(first || val > deltabeta) {
                     deltabeta = val;
                     first = false;
                 }
-//                printf("Current: %lf\nBest: %lf\n", val, deltabeta);
             }
-//            val = (-2.0 * get(&dists, k, i)) /
-//                sqdeuclid_dist(membvec[k].mtx, idcol, objc);
-//            if(first || val > deltabeta) {
-//                deltabeta = val;
-//                first = false;
-//            }
-//            printf("Current: %lf\nBest: %lf\n", val, deltabeta);
         }
         idcol[i] = 0.0;
     }
@@ -344,18 +326,23 @@ void update_weights() {
         printf("\n");
         for(j = 0; j < dmatrixc; ++j) {
             val = 0.0;
-            // temporary(?) fix to avoid division by zero
+            // temporary(?) fix to avoid division by zero was
+            // commented out
             for(p = 0; p < dmatrixc; ++p) {
-                if(dispersion[p]) {
+                if(!dispersion[p]) {
+                    printf("Warn: division by zero\n");
+                }
+//                if(dispersion[p]) {
                     val += pow(dispersion[j] / dispersion[p],
                             qexpval);
-                }
+//                }
             }
             if(!val) {
-                set(&weights, k, j, 0.0);
-            } else {
+                    printf("Warn: division by zero\n");
+//                set(&weights, k, j, 0.0);
+            } //else {
                 set(&weights, k, j, 1.0 / val);
-            }
+//            }
         }
     }
 }
@@ -399,7 +386,6 @@ double run() {
         adeq = adequacy();
         printf("Adequacy: %.15lf\n", adeq);
         adeq_diff = prev_iter_adeq - adeq;
-//        printf("%.15lf %.15lf %.15lf\n", prev_iter_adeq, adeq, adeq_diff);
         if(adeq_diff < 0.0) {
             adeq_diff = fabs(adeq_diff);
             printf("Warn: previous iteration adequacy is greater "
@@ -408,10 +394,6 @@ double run() {
         if(adeq_diff < epsilon) {
             printf("Adequacy difference threshold reached (%.15lf)."
                     "\n", adeq_diff);
-            break;
-        }
-        if(mtxeq(&prev_memb, &memb)) {
-            printf("Fuzzy memberships did not change.\n");
             break;
         }
         if(++iter > max_iter) {
@@ -584,7 +566,7 @@ int main(int argc, char **argv) {
         transpose_(&dists_t, &dists);
         aggregate_dmatrices(&agg_dmatrix, &weights);
         csil = crispsil(groups, &agg_dmatrix);
-        fsil = fuzzysil(csil, groups, &memb, 1.6);
+        fsil = fuzzysil(csil, groups, &memb, mfuz);
         ssil = simplesil(pred, &dists_t);
         if(i == 1) {
             avg_partcoef = partcoef(&memb);
@@ -652,17 +634,17 @@ int main(int argc, char **argv) {
 
     print_header("Averaged crisp silhouette", HEADER_SIZE);
     print_silhouet(avg_csil);
-    print_header("Averaged fuzzy silhouette (m = 1.6)", HEADER_SIZE);
+    print_header("Averaged fuzzy silhouette", HEADER_SIZE);
     print_silhouet(avg_fsil);
-    print_header("Averaged simple silhouette (m = 1.6)", HEADER_SIZE);
+    print_header("Averaged simple silhouette", HEADER_SIZE);
     print_silhouet(avg_ssil);
 
     aggregate_dmatrices(&agg_dmatrix, &best_weights);
     csil = crispsil(groups, &agg_dmatrix);
     print_header("Best instance crisp silhouette", HEADER_SIZE);
     print_silhouet(csil);
-    fsil = fuzzysil(csil, groups, &best_memb, 1.6);
-    print_header("Best instance fuzzy silhouette (m = 1.6)", HEADER_SIZE);
+    fsil = fuzzysil(csil, groups, &best_memb, mfuz);
+    print_header("Best instance fuzzy silhouette", HEADER_SIZE);
     print_silhouet(fsil);
     ssil = simplesil(pred, &dists_t);
     print_header("Best instance simple silhouette", HEADER_SIZE);
