@@ -309,7 +309,9 @@ void update_weights() {
     size_t p;
     double dispersion[dmatrixc];
     double val;
+    int zeroc;
     for(k = 0; k < clustc; ++k) {
+        zeroc = 0;
         printf("Dispersions:\n");
         for(j = 0; j < dmatrixc; ++j) {
             val = 0.0;
@@ -320,29 +322,39 @@ void update_weights() {
                         get(&dmatrix[j], i, h);
                 }
             }
+            if(!val) {
+                ++zeroc;
+            }
             dispersion[j] = val;
             printf("%.15lf ", val);
         }
         printf("\n");
-        for(j = 0; j < dmatrixc; ++j) {
-            val = 0.0;
-            // temporary(?) fix to avoid division by zero was
-            // commented out
-            for(p = 0; p < dmatrixc; ++p) {
-                if(!dispersion[p]) {
-                    printf("Warn: division by zero\n");
+        if(zeroc) {
+            printf("Msg: at least one dispersion is zero for cluster"
+                    " %d\n", k);
+            val = 1.0 / zeroc;
+            for(j = 0; j < dmatrixc; ++j) {
+                if(!dispersion[j]) {
+                    set(&weights, k, j, val);
+                } else {
+                    set(&weights, k, j, 0.0);
                 }
-//                if(dispersion[p]) {
+            }
+        } else {
+            for(j = 0; j < dmatrixc; ++j) {
+                val = 0.0;
+                for(p = 0; p < dmatrixc; ++p) {
+//                    if(!dispersion[p]) {
+//                        printf("Warn: division by zero\n");
+//                    }
                     val += pow(dispersion[j] / dispersion[p],
                             qexpval);
-//                }
-            }
-            if(!val) {
-                    printf("Warn: division by zero\n");
-//                set(&weights, k, j, 0.0);
-            } //else {
+                }
+                if(!val) {
+                        printf("Warn: division by zero\n");
+                }
                 set(&weights, k, j, 1.0 / val);
-//            }
+            }
         }
     }
 }
